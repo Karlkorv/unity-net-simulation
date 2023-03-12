@@ -61,14 +61,14 @@ namespace Code
         //  and other fancy features. This is only to get clean 
         //  access to Pos/Vel/Force in a consistent way.
 
-        void Awake()
+        private void Awake()
         {
             State = new RopePoint.PointState();
             //Get initial position
             State.Position = transform.position;
         }
-    
-        void Update()
+
+        private void Update()
         { 
             //Update graphical representation
             transform.position = State.Position;

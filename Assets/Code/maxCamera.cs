@@ -34,8 +34,8 @@ namespace Code
         private Quaternion m_rotation;
         private Vector3 m_position;
 
-        void Start() { Init(); }
-        void OnEnable() { Init(); }
+        private void Start() { Init(); }
+        private void OnEnable() { Init(); }
 
         public void Init()
         {
@@ -64,7 +64,7 @@ namespace Code
         /*
      * Camera logic on LateUpdate to only update after all character movement logic has been handled. 
      */
-        void LateUpdate()
+        private void LateUpdate()
         {
             // Scroll
             if (Input.GetMouseButton(1) && (Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)))

@@ -14,12 +14,12 @@ namespace Code
         private Vector3 m_dragOrigin;
         private Vector3 m_dragClickHit;
 
-        void Start () 
+        private void Start () 
         {
 	    
         }
-	
-        void Update () 
+
+        private void Update () 
         {
             if(m_dragging)
             {

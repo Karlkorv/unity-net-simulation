@@ -15,6 +15,9 @@ namespace Code
         [FormerlySerializedAs("m_rootPoint")] [SerializeField]
         private Transform rootPoint = null;
         
+        [SerializeField]
+        private Transform anchorPoint = null;
+        
         [FormerlySerializedAs("m_groundPlanes")] [SerializeField]
         private Transform[] groundPlanes = null;
 
@@ -65,7 +68,7 @@ namespace Code
 
         private RopeMesh m_meshGenerator = new RopeMesh();
 
-        void Start ()
+        private void Start ()
         {
             m_integrators.Add(IntegratorType.Euler, new EulerIntegrator());
             m_integrators.Add(IntegratorType.Leapfrog, new LeapfrogIntegrator());
@@ -74,7 +77,7 @@ namespace Code
             RecreateRopePoints();
         }
 
-        void Update () 
+        private void Update () 
         {
             m_accumulator += Mathf.Min(Time.deltaTime / integratorTimeStep, 3.0f);
 
@@ -99,16 +102,16 @@ namespace Code
             m_meshGenerator.GenerateMesh (GetComponent<MeshFilter>().mesh, m_points.Select(p=>p.transform.localPosition).ToList(), false);
         }
 
-        void ApplyForces(float timeStep)
+        private void ApplyForces(float timeStep)
         {
             ClearAndApplyGravity();
             ApplyGroundForces();
             ApplyAirFriction();
             ApplySpringForces();
-            ConstraintTopPointToRoot();
+            ConstraintAnchorPoints();
         }
 
-        void ClearAndApplyGravity()
+        private void ClearAndApplyGravity()
         {
             foreach (var point in m_points)
             {
@@ -117,7 +120,7 @@ namespace Code
             }
         }
 
-        void ApplyGroundForces()
+        private void ApplyGroundForces()
         {
             if(groundPlanes == null)
                 return;
@@ -145,15 +148,16 @@ namespace Code
             }
         }
 
-        void ConstraintTopPointToRoot()
+        private void ConstraintAnchorPoints()
         {
-            if (rootPoint != null)
+            if (rootPoint != null && anchorPoint != null)
             {
+                m_points[^1].State.Velocity = (anchorPoint.transform.position - m_points[^1].State.Position) / integratorTimeStep;
                 m_points[0].State.Velocity = (rootPoint.transform.position - m_points[0].State.Position) / integratorTimeStep;
             }
         }
-        
-        void ApplyAirFriction()
+
+        private void ApplyAirFriction()
         {
             foreach (var point in m_points)
             {
@@ -162,7 +166,7 @@ namespace Code
             }
         }
 
-        void ApplySpringForces()
+        private void ApplySpringForces()
         {
             float segmentLength = totalLength / (numberOfPoints - 1);
 
@@ -183,7 +187,7 @@ namespace Code
             }
         }
 
-        void RecreateRopePoints()
+        private void RecreateRopePoints()
         {
             if (m_points != null)
             {
@@ -201,6 +205,7 @@ namespace Code
                 RopePoint point = (RopePoint)Instantiate(ropePointPrefab, rootPoint.position - Vector3.right * i * segmentLength, Quaternion.identity);
                 point.transform.parent = transform;
                 point.GetComponent<Draggable>().SetDragHook(rootPoint);
+                point.GetComponent<Draggable>().SetDragHook(anchorPoint);
                 m_points.Add(point);
             }
             
@@ -211,7 +216,7 @@ namespace Code
             m_prevShowSimulationPoints = !showSimulationPoints; //Make sure points are enabled/disabled
         }
 
-        void AdvanceSimulation()
+        private void AdvanceSimulation()
         {
             m_integrators[integratorType].Advance(m_points, ApplyForces, integratorTimeStep);
         }

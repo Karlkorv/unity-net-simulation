@@ -7,13 +7,13 @@ namespace Code
 	{
 		private int m_edges = 9;
 		private float m_radius = 0.1f;
-	
-		List<Vector3> m_vertices;
-		List<int> m_triangles;
-		List<Vector2> m_uvs;
-		bool m_rebuild;
-		float m_totalDist;
-		Vector3 m_look = new Vector3(23,42,12).normalized;
+
+		private List<Vector3> m_vertices;
+		private List<int> m_triangles;
+		private List<Vector2> m_uvs;
+		private bool m_rebuild;
+		private float m_totalDist;
+		private Vector3 m_look = new Vector3(23,42,12).normalized;
 
 		/// <summary>
 		/// Generates the mesh.
