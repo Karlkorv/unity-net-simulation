@@ -13,9 +13,9 @@ namespace Code
         private RopePoint ropePointPrefab = null;
 
         [FormerlySerializedAs("m_rootPoint")] [SerializeField]
-        private Transform rootPoint = null;
+        public Transform rootPoint = null;
 
-        [SerializeField] private Transform anchorPoint = null;
+        [SerializeField] public Transform anchorPoint = null;
 
         [FormerlySerializedAs("m_groundPlanes")] [SerializeField]
         private Transform[] groundPlanes = null;
@@ -33,10 +33,10 @@ namespace Code
         private float sphereDamping = 5.0f;
 
         [FormerlySerializedAs("m_numberOfPoints")] [SerializeField, Range(2, 200)]
-        private int numberOfPoints = 10;
+        public int numberOfPoints = 10;
 
         [FormerlySerializedAs("m_totalLength")] [SerializeField, Range(0.1f, 10.0f)]
-        private float totalLength = 2.0f;
+        public float totalLength = 2.0f;
 
         [FormerlySerializedAs("m_integratorType")] [SerializeField]
         private IntegratorType integratorType = IntegratorType.Euler;
@@ -51,20 +51,22 @@ namespace Code
         private Vector3 gravity = new Vector3(0, -10, 0);
 
         [FormerlySerializedAs("m_ropeDamping")] [SerializeField]
-        private float ropeDamping = 7.0f;
+        public float ropeDamping = 7.0f;
 
         [FormerlySerializedAs("m_ropeStiffness")] [SerializeField]
-        private float ropeStiffness = 800.0f;
+        public float ropeStiffness = 800.0f;
 
         [FormerlySerializedAs("m_showSimulationPoints")] [SerializeField]
         private bool showSimulationPoints = true;
+
+        [SerializeField] private HashSet<Rope> linkedRopes = new HashSet<Rope>();
+
 
         private int m_previousNumberOfPoints;
         private List<RopePoint> m_points = null;
         private float m_accumulator = 0.0f;
         private bool m_prevShowSimulationPoints = true;
         private Dictionary<IntegratorType, INtegrator> m_integrators = new Dictionary<IntegratorType, INtegrator>();
-
         private RopeMesh m_meshGenerator = new RopeMesh();
 
         private void Start()
@@ -151,12 +153,16 @@ namespace Code
 
         private void ConstraintAnchorPoints()
         {
-            if (rootPoint != null && anchorPoint != null)
+            if (rootPoint != null)
             {
-                m_points[^1].State.Velocity =
-                    (anchorPoint.transform.position - m_points[^1].State.Position) / integratorTimeStep;
-                m_points[0].State.Velocity =
-                    (rootPoint.transform.position - m_points[0].State.Position) / integratorTimeStep;
+                m_points[0].State.Velocity = Vector3.zero;
+                m_points[0].State.Position = rootPoint.transform.position;
+            }
+
+            if (anchorPoint != null)
+            {
+                m_points[^1].State.Velocity = Vector3.zero;
+                m_points[^1].State.Position = anchorPoint.transform.position;
             }
         }
 
@@ -176,23 +182,34 @@ namespace Code
 
             for (int i = 0; i < numberOfPoints - 1; i++)
             {
-                RopePoint p1 = m_points[i];
-                RopePoint p2 = m_points[i + 1];
-
-                //Apply spring force and damping between p1 and p2
-
-                float relativeDistanceDiff = (p2.State.Position - p1.State.Position).magnitude - segmentLength;
-                Vector3 springForce = ropeStiffness * relativeDistanceDiff *
-                                      (p2.State.Position - p1.State.Position).normalized;
-                Vector3 dampingForce = -ropeDamping * (p2.State.Velocity - p1.State.Velocity).magnitude *
-                                       (p2.State.Velocity - p1.State.Velocity).normalized;
-                Vector3 totalForce = springForce - dampingForce;
-                p1.ApplyForce(totalForce);
-                p2.ApplyForce(-totalForce);
+                var p1 = m_points[i];
+                foreach (var p2 in m_points[i].Neighbors)
+                {
+                    float relativeDistanceDiff = (p2.State.Position - p1.State.Position).magnitude - segmentLength;
+                    Vector3 springForce = ropeStiffness * relativeDistanceDiff *
+                                          (p2.State.Position - p1.State.Position).normalized;
+                    Vector3 dampingForce = -ropeDamping * (p2.State.Velocity - p1.State.Velocity).magnitude *
+                                           (p2.State.Velocity - p1.State.Velocity).normalized;
+                    Vector3 totalForce = springForce - dampingForce;
+                    p1.ApplyForce(totalForce);
+                    p2.ApplyForce(-totalForce);
+                }
             }
         }
 
-        private void RecreateRopePoints()
+        public void LinkTo(Rope rope)
+        {
+            if (rope.numberOfPoints != numberOfPoints)
+                throw new Exception("Ropes must have the same number of points to be linked");
+            for (int i = 0; i < numberOfPoints; i++)
+            {
+                m_points[i].LinkTo(rope.m_points[i]);
+            }
+
+            linkedRopes.Add(rope);
+        }
+
+        public void RecreateRopePoints()
         {
             if (m_points != null)
             {
@@ -212,6 +229,13 @@ namespace Code
                 point.transform.parent = transform;
                 point.GetComponent<Draggable>().SetDragHook(i < numberOfPoints / 2 ? rootPoint : anchorPoint);
                 m_points.Add(point);
+                if (i > 0)
+                    m_points[i - 1].LinkTo(m_points[i]);
+            }
+
+            foreach (var rope in linkedRopes)
+            {
+                LinkTo(rope);
             }
 
             m_previousNumberOfPoints = numberOfPoints;

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Serialization;
 
 namespace Code
@@ -28,9 +29,13 @@ namespace Code
             }
         }
 
+        [SerializeField] private List<RopePoint> neighbors = null;
+
+        public List<RopePoint> Neighbors => neighbors;
+
         public PointState State { get; set; }
-   
-        public Vector3 Force{ get; private set; }
+
+        public Vector3 Force { get; private set; }
         [FormerlySerializedAs("Mass")] public float mass = 1.0f;
 
         public void ClearForce()
@@ -47,6 +52,7 @@ namespace Code
         {
             m_savedState = State.Clone();
         }
+
         public void LoadState()
         {
             State = m_savedState.Clone();
@@ -63,15 +69,22 @@ namespace Code
 
         private void Awake()
         {
+            neighbors = new List<RopePoint>();
             State = new RopePoint.PointState();
             //Get initial position
             State.Position = transform.position;
         }
 
         private void Update()
-        { 
+        {
             //Update graphical representation
             transform.position = State.Position;
+        }
+
+        public void LinkTo(RopePoint neighbor)
+        {
+            neighbor.neighbors.Add(this);
+            neighbors.Add(neighbor);
         }
     }
 }
