@@ -14,10 +14,9 @@ namespace Code
 
         [FormerlySerializedAs("m_rootPoint")] [SerializeField]
         private Transform rootPoint = null;
-        
-        [SerializeField]
-        private Transform anchorPoint = null;
-        
+
+        [SerializeField] private Transform anchorPoint = null;
+
         [FormerlySerializedAs("m_groundPlanes")] [SerializeField]
         private Transform[] groundPlanes = null;
 
@@ -26,7 +25,7 @@ namespace Code
 
         [FormerlySerializedAs("m_groundDamping")] [SerializeField]
         private float groundDamping = 5.0f;
-        
+
         [FormerlySerializedAs("m_sphereStiffness")] [SerializeField]
         private float sphereStiffness = 800.0f;
 
@@ -56,7 +55,7 @@ namespace Code
 
         [FormerlySerializedAs("m_ropeStiffness")] [SerializeField]
         private float ropeStiffness = 800.0f;
-	
+
         [FormerlySerializedAs("m_showSimulationPoints")] [SerializeField]
         private bool showSimulationPoints = true;
 
@@ -64,11 +63,11 @@ namespace Code
         private List<RopePoint> m_points = null;
         private float m_accumulator = 0.0f;
         private bool m_prevShowSimulationPoints = true;
-        private Dictionary<IntegratorType, INtegrator> m_integrators = new Dictionary<IntegratorType,INtegrator>();
+        private Dictionary<IntegratorType, INtegrator> m_integrators = new Dictionary<IntegratorType, INtegrator>();
 
         private RopeMesh m_meshGenerator = new RopeMesh();
 
-        private void Start ()
+        private void Start()
         {
             m_integrators.Add(IntegratorType.Euler, new EulerIntegrator());
             m_integrators.Add(IntegratorType.Leapfrog, new LeapfrogIntegrator());
@@ -77,7 +76,7 @@ namespace Code
             RecreateRopePoints();
         }
 
-        private void Update () 
+        private void Update()
         {
             m_accumulator += Mathf.Min(Time.deltaTime / integratorTimeStep, 3.0f);
 
@@ -88,7 +87,7 @@ namespace Code
 
             if (showSimulationPoints != m_prevShowSimulationPoints)
             {
-                foreach (var pointRenderer in m_points.Select(x=>x.GetComponent<MeshRenderer>()))
+                foreach (var pointRenderer in m_points.Select(x => x.GetComponent<MeshRenderer>()))
                     pointRenderer.enabled = showSimulationPoints;
                 m_prevShowSimulationPoints = showSimulationPoints;
             }
@@ -99,7 +98,9 @@ namespace Code
 
                 AdvanceSimulation();
             }
-            m_meshGenerator.GenerateMesh (GetComponent<MeshFilter>().mesh, m_points.Select(p=>p.transform.localPosition).ToList(), false);
+
+            m_meshGenerator.GenerateMesh(GetComponent<MeshFilter>().mesh,
+                m_points.Select(p => p.transform.localPosition).ToList(), false);
         }
 
         private void ApplyForces(float timeStep)
@@ -122,7 +123,7 @@ namespace Code
 
         private void ApplyGroundForces()
         {
-            if(groundPlanes == null)
+            if (groundPlanes == null)
                 return;
 
             foreach (var ground in groundPlanes)
@@ -152,8 +153,10 @@ namespace Code
         {
             if (rootPoint != null && anchorPoint != null)
             {
-                m_points[^1].State.Velocity = (anchorPoint.transform.position - m_points[^1].State.Position) / integratorTimeStep;
-                m_points[0].State.Velocity = (rootPoint.transform.position - m_points[0].State.Position) / integratorTimeStep;
+                m_points[^1].State.Velocity =
+                    (anchorPoint.transform.position - m_points[^1].State.Position) / integratorTimeStep;
+                m_points[0].State.Velocity =
+                    (rootPoint.transform.position - m_points[0].State.Position) / integratorTimeStep;
             }
         }
 
@@ -179,8 +182,10 @@ namespace Code
                 //Apply spring force and damping between p1 and p2
 
                 float relativeDistanceDiff = (p2.State.Position - p1.State.Position).magnitude - segmentLength;
-                Vector3 springForce = ropeStiffness * relativeDistanceDiff * (p2.State.Position - p1.State.Position).normalized;
-                Vector3 dampingForce = -ropeDamping * (p2.State.Velocity - p1.State.Velocity).magnitude * (p2.State.Velocity - p1.State.Velocity).normalized;
+                Vector3 springForce = ropeStiffness * relativeDistanceDiff *
+                                      (p2.State.Position - p1.State.Position).normalized;
+                Vector3 dampingForce = -ropeDamping * (p2.State.Velocity - p1.State.Velocity).magnitude *
+                                       (p2.State.Velocity - p1.State.Velocity).normalized;
                 Vector3 totalForce = springForce - dampingForce;
                 p1.ApplyForce(totalForce);
                 p2.ApplyForce(-totalForce);
@@ -202,17 +207,18 @@ namespace Code
 
             for (int i = 0; i < numberOfPoints; i++)
             {
-                RopePoint point = (RopePoint)Instantiate(ropePointPrefab, rootPoint.position - Vector3.right * i * segmentLength, Quaternion.identity);
+                RopePoint point = (RopePoint)Instantiate(ropePointPrefab,
+                    rootPoint.position - Vector3.right * i * segmentLength, Quaternion.identity);
                 point.transform.parent = transform;
-                point.GetComponent<Draggable>().SetDragHook(rootPoint);
-                point.GetComponent<Draggable>().SetDragHook(anchorPoint);
+                point.GetComponent<Draggable>().SetDragHook(i < numberOfPoints / 2 ? rootPoint : anchorPoint);
                 m_points.Add(point);
             }
-            
+
             m_previousNumberOfPoints = numberOfPoints;
-            if (GetComponent<MeshFilter> ().mesh == null)
-                GetComponent<MeshFilter> ().mesh = new Mesh ();
-            m_meshGenerator.GenerateMesh (GetComponent<MeshFilter>().mesh, m_points.Select(p=>p.transform.localPosition).ToList(), true);
+            if (GetComponent<MeshFilter>().mesh == null)
+                GetComponent<MeshFilter>().mesh = new Mesh();
+            m_meshGenerator.GenerateMesh(GetComponent<MeshFilter>().mesh,
+                m_points.Select(p => p.transform.localPosition).ToList(), true);
             m_prevShowSimulationPoints = !showSimulationPoints; //Make sure points are enabled/disabled
         }
 
