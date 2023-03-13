@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -35,6 +36,7 @@ namespace Code
 
         public PointState State { get; set; }
 
+        private Vector3 collisionForceToApply = Vector3.zero;
         public Vector3 Force { get; private set; }
         [FormerlySerializedAs("Mass")] public float mass = 1.0f;
 
@@ -48,6 +50,12 @@ namespace Code
             Force += force;
         }
 
+        public void ApplyCollisionForce()
+        {
+            Force += collisionForceToApply;
+            collisionForceToApply = Vector3.zero;
+        }
+
         public void SaveState()
         {
             m_savedState = State.Clone();
@@ -56,6 +64,14 @@ namespace Code
         public void LoadState()
         {
             State = m_savedState.Clone();
+        }
+
+        public void OnCollisionEnter(Collision collision)
+        {
+            if (collision.rigidbody == null)
+                return;
+            collisionForceToApply = collision.relativeVelocity * collision.rigidbody.mass;
+            collision.rigidbody.AddForce(-collisionForceToApply);
         }
 
         private PointState m_savedState = new PointState();

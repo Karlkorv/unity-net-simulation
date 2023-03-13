@@ -2,13 +2,13 @@
 
 namespace Code
 {
-    public class Draggable : MonoBehaviour 
+    public class Draggable : MonoBehaviour
     {
         private Transform m_dragHook;
 
         public Transform GetDragHook()
         {
-            return m_dragHook ?? this.transform;
+            return m_dragHook ? m_dragHook : this.transform;
         }
 
         /*
@@ -19,6 +19,5 @@ namespace Code
             //Debug.Log("setting drag hook");
             m_dragHook = dragHook;
         }
-    
     }
 }

@@ -111,6 +111,7 @@ namespace Code
             ApplyGroundForces();
             ApplyAirFriction();
             ApplySpringForces();
+            ApplyCollisionForces();
             ConstraintAnchorPoints();
         }
 
@@ -120,6 +121,14 @@ namespace Code
             {
                 point.ClearForce();
                 point.ApplyForce(gravity * point.mass);
+            }
+        }
+
+        private void ApplyCollisionForces()
+        {
+            foreach (var point in m_points)
+            {
+                point.ApplyCollisionForce();
             }
         }
 
@@ -227,7 +236,6 @@ namespace Code
                 RopePoint point = (RopePoint)Instantiate(ropePointPrefab,
                     rootPoint.position - Vector3.right * i * segmentLength, Quaternion.identity);
                 point.transform.parent = transform;
-                point.GetComponent<Draggable>().SetDragHook(i < numberOfPoints / 2 ? rootPoint : anchorPoint);
                 m_points.Add(point);
                 if (i > 0)
                     m_points[i - 1].LinkTo(m_points[i]);
@@ -244,6 +252,14 @@ namespace Code
             m_meshGenerator.GenerateMesh(GetComponent<MeshFilter>().mesh,
                 m_points.Select(p => p.transform.localPosition).ToList(), true);
             m_prevShowSimulationPoints = !showSimulationPoints; //Make sure points are enabled/disabled
+        }
+
+        public void SetDragHook(Transform hook)
+        {
+            foreach (var ropePoint in m_points)
+            {
+                ropePoint.GetComponent<Draggable>().SetDragHook(hook);
+            }
         }
 
         private void AdvanceSimulation()

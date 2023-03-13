@@ -111,6 +111,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c42d5c98e87226479fcc64ab6162c37, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  sphereCollider: {fileID: 0}
+  neighbors: []
   mass: 1
 --- !u!114 &11400000
 MonoBehaviour:
