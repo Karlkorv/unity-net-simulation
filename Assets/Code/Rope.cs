@@ -47,9 +47,6 @@ namespace Code
         [FormerlySerializedAs("m_airFriction")] [SerializeField, Range(0, 5)]
         private float airFriction = 1.0f;
 
-        [FormerlySerializedAs("m_gravity")] [SerializeField]
-        private Vector3 gravity = new Vector3(0, -10, 0);
-
         [FormerlySerializedAs("m_ropeDamping")] [SerializeField]
         public float ropeDamping = 7.0f;
 
@@ -61,6 +58,8 @@ namespace Code
 
         [SerializeField] private HashSet<Rope> linkedRopes = new HashSet<Rope>();
 
+        [FormerlySerializedAs("m_ropeMass")] [SerializeField]
+        public float ropeMass = 1.0f;
 
         private int m_previousNumberOfPoints;
         private List<RopePoint> m_points = null;
@@ -101,8 +100,8 @@ namespace Code
                 AdvanceSimulation();
             }
 
-            m_meshGenerator.GenerateMesh(GetComponent<MeshFilter>().mesh,
-                m_points.Select(p => p.transform.localPosition).ToList(), false);
+            //m_meshGenerator.GenerateMesh(GetComponent<MeshFilter>().mesh,
+            //m_points.Select(p => p.transform.localPosition).ToList(), false);
         }
 
         private void ApplyForces(float timeStep)
@@ -120,7 +119,7 @@ namespace Code
             foreach (var point in m_points)
             {
                 point.ClearForce();
-                point.ApplyForce(gravity * point.mass);
+                point.ApplyForce(Physics.gravity * point.mass);
             }
         }
 
@@ -231,11 +230,19 @@ namespace Code
             m_points = new List<RopePoint>();
             float segmentLength = totalLength / (numberOfPoints - 1);
 
+            List<Vector3> points = new List<Vector3>();
+            Vector3 dirBetweenPoints = (rootPoint.position - anchorPoint.position).normalized;
+            for (int i = 0; i < numberOfPoints; i++)
+            {
+                points.Add(rootPoint.position + dirBetweenPoints * (i * segmentLength));
+            }
+
             for (int i = 0; i < numberOfPoints; i++)
             {
                 RopePoint point = (RopePoint)Instantiate(ropePointPrefab,
-                    rootPoint.position - Vector3.right * i * segmentLength, Quaternion.identity);
+                    points[i], Quaternion.identity);
                 point.transform.parent = transform;
+                point.mass = ropeMass / numberOfPoints;
                 m_points.Add(point);
                 if (i > 0)
                     m_points[i - 1].LinkTo(m_points[i]);
@@ -247,10 +254,10 @@ namespace Code
             }
 
             m_previousNumberOfPoints = numberOfPoints;
-            if (GetComponent<MeshFilter>().mesh == null)
-                GetComponent<MeshFilter>().mesh = new Mesh();
-            m_meshGenerator.GenerateMesh(GetComponent<MeshFilter>().mesh,
-                m_points.Select(p => p.transform.localPosition).ToList(), true);
+            // if (GetComponent<MeshFilter>().mesh == null)
+            // GetComponent<MeshFilter>().mesh = new Mesh();
+            // m_meshGenerator.GenerateMesh(GetComponent<MeshFilter>().mesh,
+            // m_points.Select(p => p.transform.localPosition).ToList(), true);
             m_prevShowSimulationPoints = !showSimulationPoints; //Make sure points are enabled/disabled
         }
 

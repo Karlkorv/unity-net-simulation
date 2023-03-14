@@ -70,7 +70,9 @@ namespace Code
         {
             if (collision.rigidbody == null)
                 return;
-            collisionForceToApply = collision.relativeVelocity * collision.rigidbody.mass;
+            var rigidbodyMass = collision.rigidbody.mass;
+            collisionForceToApply = collision.relativeVelocity * rigidbodyMass;
+            collisionForceToApply += rigidbodyMass * Physics.gravity;
             collision.rigidbody.AddForce(-collisionForceToApply);
         }
 
@@ -86,9 +88,11 @@ namespace Code
         private void Awake()
         {
             neighbors = new List<RopePoint>();
-            State = new RopePoint.PointState();
-            //Get initial position
-            State.Position = transform.position;
+            State = new RopePoint.PointState
+            {
+                //Get initial position
+                Position = transform.position
+            };
         }
 
         private void Update()
