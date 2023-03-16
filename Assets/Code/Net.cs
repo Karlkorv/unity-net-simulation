@@ -29,6 +29,8 @@ namespace Code
 
         [SerializeField] public float sideLength = 5.0f;
 
+        [SerializeField] public float collisionDamping = 0.5f;
+
         private int prevRopesPerSide;
         private int prevPointsPerRope;
         private float prevRopeMass;
@@ -36,6 +38,7 @@ namespace Code
         private float prevRopeDamping;
         private float prevSideLength;
         private Transform prevRootPoint;
+        private float prevDamping;
 
         private void Awake()
         {
@@ -44,7 +47,7 @@ namespace Code
 
         private void Update()
         {
-            if (valuesHasChanged())
+            if (RopeValuesHasChanged())
             {
                 InitializeRopes();
             }
@@ -52,7 +55,7 @@ namespace Code
 
         private void InitializeRopes()
         {
-            saveCurrentValues();
+            SaveCurrentValues();
             if (ropes != null)
             {
                 foreach (var rope in ropes)
@@ -74,7 +77,7 @@ namespace Code
             }
         }
 
-        private void saveCurrentValues()
+        private void SaveCurrentValues()
         {
             prevRootPoint = rootPoint;
             prevRopesPerSide = numberOfRopesPerSide;
@@ -83,9 +86,10 @@ namespace Code
             prevRopeStiffness = ropeStiffness;
             prevRopeDamping = ropeDamping;
             prevSideLength = sideLength;
+            prevDamping = collisionDamping;
         }
 
-        private bool valuesHasChanged()
+        private bool RopeValuesHasChanged()
         {
             var returnBool = false;
             returnBool |= prevRopesPerSide != numberOfRopesPerSide;
@@ -95,6 +99,7 @@ namespace Code
             returnBool |= prevRopeDamping != ropeDamping;
             returnBool |= prevSideLength != sideLength;
             returnBool |= prevRootPoint != rootPoint;
+            returnBool |= prevDamping != collisionDamping;
             return returnBool;
         }
 
@@ -113,6 +118,8 @@ namespace Code
             rope.ropeMass = ropeMass;
             rope.numberOfPoints = numberOfPointsPerRope;
             rope.totalLength = sideLength;
+            rope.collisionDamping = collisionDamping;
+
             return rope;
         }
     }

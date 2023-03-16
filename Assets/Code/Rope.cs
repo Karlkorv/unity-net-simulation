@@ -48,7 +48,7 @@ namespace Code
         private float airFriction = 1.0f;
 
         [FormerlySerializedAs("m_ropeDamping")] [SerializeField]
-        public float ropeDamping = 7.0f;
+        public float ropeDamping = 0.5f;
 
         [FormerlySerializedAs("m_ropeStiffness")] [SerializeField]
         public float ropeStiffness = 800.0f;
@@ -60,6 +60,8 @@ namespace Code
 
         [FormerlySerializedAs("m_ropeMass")] [SerializeField]
         public float ropeMass = 1.0f;
+
+        public float collisionDamping;
 
         private int m_previousNumberOfPoints;
         private List<RopePoint> m_points = null;
@@ -79,8 +81,6 @@ namespace Code
 
         private void Update()
         {
-            m_accumulator += Mathf.Min(Time.deltaTime / integratorTimeStep, 3.0f);
-
             if (m_previousNumberOfPoints != numberOfPoints)
             {
                 RecreateRopePoints();
@@ -93,13 +93,9 @@ namespace Code
                 m_prevShowSimulationPoints = showSimulationPoints;
             }
 
-            while (m_accumulator > 1.0f)
-            {
-                m_accumulator -= 1.0f;
+            m_accumulator -= 1.0f;
 
-                AdvanceSimulation();
-            }
-
+            AdvanceSimulation();
             //m_meshGenerator.GenerateMesh(GetComponent<MeshFilter>().mesh,
             //m_points.Select(p => p.transform.localPosition).ToList(), false);
         }
@@ -196,9 +192,8 @@ namespace Code
                     float relativeDistanceDiff = (p2.State.Position - p1.State.Position).magnitude - segmentLength;
                     Vector3 springForce = ropeStiffness * relativeDistanceDiff *
                                           (p2.State.Position - p1.State.Position).normalized;
-                    Vector3 dampingForce = -ropeDamping * (p2.State.Velocity - p1.State.Velocity).magnitude *
-                                           (p2.State.Velocity - p1.State.Velocity).normalized;
-                    Vector3 totalForce = springForce - dampingForce;
+                    Vector3 dampingForce = ropeDamping * (p2.State.Velocity - p1.State.Velocity);
+                    Vector3 totalForce = springForce + dampingForce;
                     p1.ApplyForce(totalForce);
                     p2.ApplyForce(-totalForce);
                 }
@@ -243,6 +238,7 @@ namespace Code
                     points[i], Quaternion.identity);
                 point.transform.parent = transform;
                 point.mass = ropeMass / numberOfPoints;
+                point.collisionDamping = collisionDamping;
                 m_points.Add(point);
                 if (i > 0)
                     m_points[i - 1].LinkTo(m_points[i]);

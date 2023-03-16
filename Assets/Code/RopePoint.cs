@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Random = UnityEngine.Random;
 
 namespace Code
 {
@@ -35,6 +36,10 @@ namespace Code
         public List<RopePoint> Neighbors => neighbors;
 
         public PointState State { get; set; }
+
+        public bool isAnchorPoint = false;
+
+        public float collisionDamping;
 
         private Vector3 collisionForceToApply = Vector3.zero;
         public Vector3 Force { get; private set; }
@@ -71,9 +76,22 @@ namespace Code
             if (collision.rigidbody == null)
                 return;
             var rigidbodyMass = collision.rigidbody.mass;
-            collisionForceToApply = collision.relativeVelocity * rigidbodyMass;
-            collisionForceToApply += rigidbodyMass * Physics.gravity;
+            collisionForceToApply = CalculateCollisionForce(collision, rigidbodyMass);
+            collisionForceToApply += Vector3.Project(Physics.gravity * rigidbodyMass, collision.contacts[0].normal);
             collision.rigidbody.AddForce(-collisionForceToApply);
+        }
+
+        private Vector3 CalculateCollisionForce(Collision collision, float rigidbodyMass)
+        {
+            var collisionForce = Vector3.zero;
+            foreach (var contact in collision.contacts)
+            {
+                var contactForce = contact.normal * (mass * rigidbodyMass) /
+                                   (collision.contactCount * Time.fixedDeltaTime * neighbors.Count);
+                collisionForce += contactForce - contactForce * collisionDamping;
+            }
+
+            return collisionForce;
         }
 
         private PointState m_savedState = new PointState();

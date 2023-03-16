@@ -34,8 +34,15 @@ namespace Code
         private Quaternion m_rotation;
         private Vector3 m_position;
 
-        private void Start() { Init(); }
-        private void OnEnable() { Init(); }
+        private void Start()
+        {
+            Init();
+        }
+
+        private void OnEnable()
+        {
+            Init();
+        }
 
         public void Init()
         {
@@ -69,7 +76,8 @@ namespace Code
             // Scroll
             if (Input.GetMouseButton(1) && (Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)))
             {
-                m_desiredDistance -= Input.GetAxis("Mouse Y") * Time.deltaTime * zoomRate * 0.125f * Mathf.Abs(m_desiredDistance);
+                m_desiredDistance -= Input.GetAxis("Mouse Y") * Time.deltaTime * zoomRate * 0.125f *
+                                     Mathf.Abs(m_desiredDistance);
             }
             else if (Input.GetMouseButton(1)) // If left-click => ORBIT
             {
@@ -87,7 +95,9 @@ namespace Code
                 m_rotation = Quaternion.Lerp(m_currentRotation, m_desiredRotation, Time.deltaTime * zoomDampening);
                 transform.rotation = m_rotation;
             }
-            else if (Input.GetMouseButton(2)) // otherwise if middle mouse is selected, we pan by way of transforming the target in screenspace
+            else if
+                (Input.GetMouseButton(
+                    2)) // otherwise if middle mouse is selected, we pan by way of transforming the target in screenspace
             {
                 //grab the rotation of the camera so we can move in a psuedo local XY space
                 target.rotation = transform.rotation;
@@ -98,7 +108,8 @@ namespace Code
             ////////Orbit Position
 
             // affect the desired Zoom distance if we roll the scrollwheel
-            m_desiredDistance -= Input.GetAxis("Mouse ScrollWheel") * Time.deltaTime * zoomRate * Mathf.Abs(m_desiredDistance);
+            m_desiredDistance -= Input.GetAxis("Mouse ScrollWheel") * Time.deltaTime * zoomRate *
+                                 Mathf.Abs(m_desiredDistance);
             //clamp the zoom min/max
             m_desiredDistance = Mathf.Clamp(m_desiredDistance, minDistance, maxDistance);
             // For smoothing of the zoom, lerp distance

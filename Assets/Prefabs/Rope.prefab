@@ -60,12 +60,13 @@ MonoBehaviour:
   numberOfPoints: 50
   totalLength: 2
   integratorType: 0
-  integratorTimeStep: 0.008333335
+  integratorTimeStep: 0.002
   airFriction: 0.5
-  gravity: {x: 0, y: -10, z: 0}
   ropeDamping: 7
   ropeStiffness: 800
   showSimulationPoints: 1
+  ropeMass: 100
+  collisionDamping: 0
 --- !u!33 &218776582339900396
 MeshFilter:
   m_ObjectHideFlags: 0
