@@ -49,6 +49,7 @@ namespace Code
             {
                 InitializePoints();
             }
+
             ApplySpringForces();
         }
 
@@ -96,7 +97,7 @@ namespace Code
                     point.transform.parent = transform;
                     point.GetComponent<Rigidbody>().mass = netMass / (numberOfPointsPerSide ^ 2);
 
-                    if (i == 0 || i == numberOfPointsPerSide - 1)
+                    if (IsCorner(i, j))
                         point.SetAnchorPoint(true);
 
                     points[i, j] = point;
@@ -120,6 +121,17 @@ namespace Code
                 }
             }
         }
+
+        private bool IsCorner(int i, int j)
+        {
+            var returnValue = false;
+            returnValue |= i == 0 && j == 0;
+            returnValue |= i == 0 && j == numberOfPointsPerSide - 1;
+            returnValue |= i == numberOfPointsPerSide - 1 && j == 0;
+            returnValue |= i == numberOfPointsPerSide - 1 && j == numberOfPointsPerSide - 1;
+            return returnValue;
+        }
+
 
         private void SaveCurrentValues()
         {
