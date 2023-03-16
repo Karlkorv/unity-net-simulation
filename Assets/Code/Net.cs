@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Code
 {
@@ -11,116 +13,130 @@ namespace Code
     /// </summary>
     public class Net : MonoBehaviour
     {
-        [SerializeField] public int numberOfRopesPerSide = 10;
-
-        [SerializeField] public int numberOfPointsPerRope = 10;
-
         [SerializeField] public Transform rootPoint = null;
 
-        [SerializeField] public List<Rope> ropes = null;
+        [SerializeField] public NetPoint netPointPrefab = null;
 
-        [SerializeField] public Rope ropePrefab = null;
+        [FormerlySerializedAs("ropeMass")] [SerializeField]
+        public float netMass = 1.0f;
 
-        [SerializeField] public float ropeMass = 1.0f;
+        [FormerlySerializedAs("ropeStiffness")] [SerializeField]
+        public float netStiffness = 800.0f;
 
-        [SerializeField] public float ropeStiffness = 800.0f;
-
-        [SerializeField] public float ropeDamping = 7.0f;
+        [FormerlySerializedAs("ropeDamping")] [SerializeField]
+        public float netDamping = 7.0f;
 
         [SerializeField] public float sideLength = 5.0f;
 
-        [SerializeField] public float collisionDamping = 0.5f;
+        [FormerlySerializedAs("numberOfPointsSide")] [SerializeField]
+        public int numberOfPointsPerSide = 5;
 
-        private int prevRopesPerSide;
-        private int prevPointsPerRope;
+        // Columns are "ropes" from anchor to anchor
+        private NetPoint[,] points;
+        private int prevPointsPerSide;
         private float prevRopeMass;
-        private float prevRopeStiffness;
-        private float prevRopeDamping;
         private float prevSideLength;
         private Transform prevRootPoint;
-        private float prevDamping;
 
         private void Awake()
         {
-            InitializeRopes();
+            InitializePoints();
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
-            if (RopeValuesHasChanged())
+            if (ValuesHasChanged())
             {
-                InitializeRopes();
+                InitializePoints();
+            }
+            ApplySpringForces();
+        }
+
+        private void ApplySpringForces()
+        {
+            var segmentLength = sideLength / numberOfPointsPerSide;
+            foreach (var point in points)
+            {
+                foreach (var neighbor in point.Neighbors)
+                {
+                    var neighborPos = neighbor.GetComponent<Rigidbody>().position;
+                    var pointPos = point.GetComponent<Rigidbody>().position;
+                    float relativeDistanceDiff = (neighborPos - pointPos).magnitude - segmentLength;
+                    Vector3 springForce = netStiffness * relativeDistanceDiff *
+                                          (neighborPos - pointPos).normalized;
+                    Vector3 dampingForce = netDamping * (neighbor.GetVelocity() - point.GetVelocity());
+                    Vector3 totalForce = springForce + dampingForce;
+                    point.ApplyForce(totalForce);
+                    neighbor.ApplyForce(-totalForce);
+                }
             }
         }
 
-        private void InitializeRopes()
+        private void InitializePoints()
         {
             SaveCurrentValues();
-            if (ropes != null)
+            if (points != null)
             {
-                foreach (var rope in ropes)
+                foreach (var point in points)
                 {
-                    Destroy(rope.gameObject);
+                    Destroy(point.gameObject);
                 }
             }
 
-            ropes = new List<Rope>();
+            points = new NetPoint[numberOfPointsPerSide, numberOfPointsPerSide];
+            var segmentLength = sideLength / numberOfPointsPerSide;
 
-            for (var i = 0; i < numberOfRopesPerSide; i++)
+            // Initialize
+            for (int i = 0; i < numberOfPointsPerSide; i++)
             {
-                var rope = CreateNetRope(i);
-                ropes.Add(rope);
-                rope.RecreateRopePoints();
-                rope.SetDragHook(rootPoint);
-                if (i > 0)
-                    ropes[i].LinkTo(ropes[i - 1]);
+                for (int j = 0; j < numberOfPointsPerSide; j++)
+                {
+                    Vector3 position = rootPoint.position + new Vector3(segmentLength * i, 0, segmentLength * j);
+                    var point = Instantiate(netPointPrefab, position, Quaternion.identity);
+                    point.transform.parent = transform;
+                    point.GetComponent<Rigidbody>().mass = netMass / (numberOfPointsPerSide ^ 2);
+
+                    if (i == 0 || i == numberOfPointsPerSide - 1)
+                        point.SetAnchorPoint(true);
+
+                    points[i, j] = point;
+                }
+            }
+
+            // Link
+            for (int i = 0; i < numberOfPointsPerSide; i++)
+            {
+                for (int j = 0; j < numberOfPointsPerSide; j++)
+                {
+                    if (i > 0)
+                    {
+                        points[i, j].LinkTo(points[i - 1, j]);
+                    }
+
+                    if (j > 0)
+                    {
+                        points[i, j].LinkTo(points[i, j - 1]);
+                    }
+                }
             }
         }
 
         private void SaveCurrentValues()
         {
             prevRootPoint = rootPoint;
-            prevRopesPerSide = numberOfRopesPerSide;
-            prevPointsPerRope = numberOfPointsPerRope;
-            prevRopeMass = ropeMass;
-            prevRopeStiffness = ropeStiffness;
-            prevRopeDamping = ropeDamping;
             prevSideLength = sideLength;
-            prevDamping = collisionDamping;
+            prevPointsPerSide = numberOfPointsPerSide;
+            prevSideLength = sideLength;
+            prevRopeMass = netMass;
         }
 
-        private bool RopeValuesHasChanged()
+        private bool ValuesHasChanged()
         {
-            var returnBool = false;
-            returnBool |= prevRopesPerSide != numberOfRopesPerSide;
-            returnBool |= prevPointsPerRope != numberOfPointsPerRope;
-            returnBool |= prevRopeMass != ropeMass;
-            returnBool |= prevRopeStiffness != ropeStiffness;
-            returnBool |= prevRopeDamping != ropeDamping;
-            returnBool |= prevSideLength != sideLength;
+            var returnBool = prevSideLength != sideLength;
             returnBool |= prevRootPoint != rootPoint;
-            returnBool |= prevDamping != collisionDamping;
+            returnBool |= prevPointsPerSide != numberOfPointsPerSide;
+            returnBool |= prevRopeMass != netMass;
             return returnBool;
-        }
-
-        private Rope CreateNetRope(int index)
-        {
-            var segmentLength = sideLength / numberOfRopesPerSide;
-            var position = rootPoint.position;
-            var rope = Instantiate(ropePrefab, transform);
-            rope.rootPoint.position = position + new Vector3(position.x - sideLength / 2, position.y,
-                position.z + segmentLength * index);
-            rope.anchorPoint.position = position + new Vector3(position.x + sideLength / 2, position.y,
-                position.z + segmentLength * index);
-            rope.transform.parent = transform;
-            rope.ropeStiffness = ropeStiffness;
-            rope.ropeDamping = ropeDamping;
-            rope.ropeMass = ropeMass;
-            rope.numberOfPoints = numberOfPointsPerRope;
-            rope.totalLength = sideLength;
-            rope.collisionDamping = collisionDamping;
-
-            return rope;
         }
     }
 }

@@ -21,6 +21,8 @@ namespace Code
         }
 
         [SerializeField] private GameObject spherePrefab = null;
+        
+        [SerializeField] private float ballMass = 1.0f;
 
         [SerializeField] private float ballLifeTime = 5.0f;
 
@@ -36,6 +38,7 @@ namespace Code
         private void SpawnSphere()
         {
             var sphere = Instantiate(spherePrefab, transform);
+            sphere.GetComponent<Rigidbody>().mass = ballMass;
             timeSinceLastSpawn = Time.time;
             spawnedSpheres.Add(new SphereState(sphere));
         }
